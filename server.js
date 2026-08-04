@@ -2,14 +2,14 @@
 
 const express = require('express');
 const getRawBody = require('raw-body');
+const { verifyAndDecryptEchoStr } = require('./wecom-crypto');
 
 const app = express();
 const port = Number.parseInt(process.env.PORT || '3000', 10);
 
-// Token configured in the WeCom Customer Service developer console.
-// Signature verification and message decryption are deliberately deferred while
-// this project is being used to inspect the callback handshake and payloads.
 const token = process.env.WECOM_TOKEN || '';
+const encodingAesKey = process.env.WECOM_ENCODING_AES_KEY || '';
+const corpId = process.env.WECOM_CORP_ID || '';
 
 app.get('/', (_req, res) => {
   res.type('text/plain').send('WeCom callback service is running');
@@ -17,14 +17,28 @@ app.get('/', (_req, res) => {
 
 // URL verification: WeCom calls this when the callback configuration is saved.
 app.get('/callback', (req, res) => {
-  const { echostr } = req.query;
+  const { msg_signature: msgSignature, timestamp, nonce, echostr } = req.query;
 
-  if (typeof echostr !== 'string') {
-    return res.status(400).type('text/plain').send('missing echostr');
+  if ([msgSignature, timestamp, nonce, echostr].some((value) => typeof value !== 'string')) {
+    return res.status(400).type('text/plain').send('missing callback parameters');
   }
 
-  // Examination mode: echo the challenge without validating its signature.
-  return res.type('text/plain').send(echostr);
+  try {
+    const plainEchoStr = verifyAndDecryptEchoStr({
+      token,
+      encodingAesKey,
+      receiveId: corpId,
+      msgSignature,
+      timestamp,
+      nonce,
+      echostr
+    });
+    res.set('Content-Type', 'text/plain; charset=utf-8');
+    return res.send(plainEchoStr);
+  } catch (error) {
+    console.warn('WeCom callback URL verification failed:', error.message);
+    return res.status(401).type('text/plain').send('invalid');
+  }
 });
 
 // Receive encrypted customer-message notifications. Do not register a JSON or
@@ -46,11 +60,14 @@ app.post('/callback', async (req, res) => {
   }
 });
 
-const server = app.listen(port, () => {
-  console.log(`WeCom callback listening on port ${port}`);
-  if (!token) {
-    console.warn('WECOM_TOKEN is not set; callback signature validation is disabled.');
-  }
-});
+let server;
+if (require.main === module) {
+  server = app.listen(port, () => {
+    console.log(`WeCom callback listening on port ${port}`);
+    if (!token || !encodingAesKey || !corpId) {
+      console.warn('WECOM_TOKEN, WECOM_ENCODING_AES_KEY and WECOM_CORP_ID are required for URL verification.');
+    }
+  });
+}
 
 module.exports = { app, server };

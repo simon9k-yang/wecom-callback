@@ -12,7 +12,7 @@ The first experiment is an HTTP callback for WeCom Customer Service messages. It
 
 ## Current limitations
 
-This first callback intentionally does not validate WeCom signatures, decrypt messages, parse XML, store messages, or call other WeCom APIs. `GET /callback` directly returns `echostr`, and `POST /callback` logs only the first 200 characters before returning `success`.
+`GET /callback` validates the WeCom SHA-1 signature, decrypts `echostr`, and validates the embedded receiveid. `POST /callback` still does not validate signatures, decrypt or parse XML, store messages, or call other WeCom APIs; it logs only the first 200 characters before returning `success`.
 
 Treat all callback payloads as untrusted. Never commit real tokens, encoding AES keys, corp IDs, secrets, decrypted customer content, or `.env` files. Avoid logging full customer messages or personal information.
 

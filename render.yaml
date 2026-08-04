@@ -11,3 +11,7 @@ services:
         value: 20
       - key: WECOM_TOKEN
         sync: false
+      - key: WECOM_ENCODING_AES_KEY
+        sync: false
+      - key: WECOM_CORP_ID
+        sync: false
