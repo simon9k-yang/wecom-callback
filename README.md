@@ -11,6 +11,7 @@ PORT=3000 \
 WECOM_TOKEN=your-token \
 WECOM_ENCODING_AES_KEY=your-43-character-key \
 WECOM_CORP_ID=your-corp-id \
+WECOM_KF_SECRET=your-customer-service-secret \
 npm start
 ```
 
@@ -26,11 +27,11 @@ The expected POST response is `success`.
 
 1. Push this directory to a Git repository.
 2. In Render, create a Blueprint from the repository. `render.yaml` supplies the build, start, and health-check settings.
-3. Set `WECOM_TOKEN`, `WECOM_ENCODING_AES_KEY`, and `WECOM_CORP_ID` in Render. The first two values must exactly match the WeCom Customer Service callback configuration; the Corp ID comes from the enterprise information page.
+3. Set `WECOM_TOKEN`, `WECOM_ENCODING_AES_KEY`, `WECOM_CORP_ID`, and `WECOM_KF_SECRET` in Render. The first two values must exactly match the WeCom Customer Service callback configuration; the Corp ID comes from the enterprise information page, and the secret must be the dedicated WeCom Customer Service secret.
 4. Configure the public callback URL in WeCom as `https://YOUR-SERVICE.onrender.com/callback`.
 
 Render supplies `PORT`; the service listens on it automatically.
 
 ## Security status
 
-GET URL verification validates the SHA-1 signature, decrypts `echostr`, and checks its embedded receiveid against `WECOM_CORP_ID`. POST notifications are still only acknowledged: their signatures and encrypted XML bodies are not yet validated or decrypted. Do not use this as a production message processor until POST verification and decryption are implemented.
+GET URL verification validates and decrypts `echostr`. POST callbacks are also verified and decrypted; `kf_msg_or_event` notifications trigger `kf/sync_msg`, and each new customer text message is echoed through `kf/send_msg` with ` CB response` appended. This is still an examination service: deduplication is only held in process memory and no durable cursor or message state is stored.

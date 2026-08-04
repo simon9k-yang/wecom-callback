@@ -50,18 +50,18 @@ function removePkcs7Padding(buffer) {
   return buffer.subarray(0, buffer.length - paddingLength);
 }
 
-function decryptEchoStr({ encodingAesKey, receiveId, encrypted }) {
+function decryptMessage({ encodingAesKey, receiveId, encrypted }) {
   const key = decodeAesKey(encodingAesKey);
   let ciphertext;
 
   try {
     ciphertext = Buffer.from(encrypted, 'base64');
   } catch {
-    throw new Error('echostr is not valid Base64');
+    throw new Error('Encrypted payload is not valid Base64');
   }
 
   if (ciphertext.length === 0 || ciphertext.length % 16 !== 0) {
-    throw new Error('echostr has an invalid encrypted length');
+    throw new Error('Encrypted payload has an invalid length');
   }
 
   const decipher = crypto.createDecipheriv('aes-256-cbc', key, key.subarray(0, 16));
@@ -88,21 +88,30 @@ function decryptEchoStr({ encodingAesKey, receiveId, encrypted }) {
   return message;
 }
 
-function verifyAndDecryptEchoStr({
+function verifyAndDecryptMessage({
   token,
   encodingAesKey,
   receiveId,
   msgSignature,
   timestamp,
   nonce,
-  echostr
+  encrypted
 }) {
-  const expectedSignature = getSignature(token, timestamp, nonce, echostr);
+  const expectedSignature = getSignature(token, timestamp, nonce, encrypted);
   if (!signaturesMatch(msgSignature, expectedSignature)) {
     throw new Error('Invalid WeCom callback signature');
   }
 
-  return decryptEchoStr({ encodingAesKey, receiveId, encrypted: echostr });
+  return decryptMessage({ encodingAesKey, receiveId, encrypted });
 }
 
-module.exports = { decryptEchoStr, getSignature, verifyAndDecryptEchoStr };
+function verifyAndDecryptEchoStr(options) {
+  return verifyAndDecryptMessage({ ...options, encrypted: options.echostr });
+}
+
+module.exports = {
+  decryptMessage,
+  getSignature,
+  verifyAndDecryptEchoStr,
+  verifyAndDecryptMessage
+};

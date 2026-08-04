@@ -15,3 +15,5 @@ services:
         sync: false
       - key: WECOM_CORP_ID
         sync: false
+      - key: WECOM_KF_SECRET
+        sync: false
