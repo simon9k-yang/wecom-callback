@@ -1,0 +1,19 @@
+{
+  "name": "wecom-function-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A small sandbox for examining WeCom functions, starting with a WeCom Customer Service callback.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "raw-body": "^3.0.0"
+  }
+}
